@@ -1,0 +1,59 @@
+(* 
+   This code defines the structure of an ontology using CDuce, with namespaces for various RDF, OWL, and SKOS elements.
+   It provides functions for loading and verifying the validity of XML data against the ontology structure. 
+   The main funzion is:
+      `safe_load_xml`: Tries to load an XML file with error handling.
+   After loading the XML, the code verifies whether the XML conforms to the ontology type and prints the corresponding validation result.
+*)
+
+(* Define namespaces for various RDF, OWL, SKOS, and other related technologies. *)
+namespace skos = "http://www.w3.org/2004/02/skos/core#";;       (* SKOS - Simple Knowledge Organization System *)
+namespace owl = "http://www.w3.org/2002/07/owl#";;              (* OWL - Web Ontology Language *)
+namespace rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";; (* RDF - Resource Description Framework *)
+namespace www = "http://www.persone#";;                         (* Custom namespace for ontology data *)
+namespace xml = "http://www.w3.org/XML/1998/namespace";;        (* XML namespace *)
+namespace xsd = "http://www.w3.org/2001/XMLSchema#";;           (* XML Schema datatypes *)
+namespace rdfs = "http://www.w3.org/2000/01/rdf-schema#";;      (* RDF Schema *)
+
+(* Define the ontology structure using CDuce's type system. *)
+type Ontology = <rdf:RDF xml:base=String> [ Class* ] 
+
+type Class = <owl:Class rdf:about=String> [ ClassAtt* ]
+type ClassAtt = SubClass | EqClass | Label | Note
+type SubClass = <rdfs:subClassOf rdf:resource=String> []
+type EqClass  = <owl:equivalentClass> [ EqAttr ] 
+              | <owl:equivalentClass rdf:resource=String> []
+type EqAttr   = <owl:Restriction> [ AnyXml* ]
+type Label    = <rdfs:label xml:lang=String> String
+type Note     = <skos:scopeNote xml:lang=String> String;;
+
+
+(* Function to safely load an XML file with error handling. 
+  If the XML file cannot be loaded (due to errors such as syntax issues), an empty RDF element is returned. *)
+let fun safe_load_xml (path : Latin1) : AnyXml =
+  try 
+    let ret_val = load_xml path in                (* Try to load the XML file *)
+    print "XML File loaded successfully\n";       (* Print success message *)
+    ret_val                                       (* Return the loaded XML *)
+  with (* Handle the exception in case of an error, printing an error message and returning an empty RDF element. *)
+    _ -> 
+      print "Error loading XML, Syntax Error\n";  (* Print error message *)
+      <rdf:RDF>[];;                               (* Return an empty RDF element as a fallback *)
+
+(* Verification function to check if the input XML matches the Ontology type. *)
+let fun verify (input : AnyXml) : Bool = 
+  match input with
+    | _ & Ontology -> `true  (* If the input matches the Ontology type, return true *)
+    | _ -> `false;;          (* Otherwise, return false *)
+
+
+(* Main entry point to load and validate the XML file. *)
+
+(* Load the XML file with error handling. *)
+let xml_file = safe_load_xml "PATH_TO_FILE";;
+
+(* Validate the loaded XML file against the Ontology type. *)
+if verify xml_file then
+  print "Valid Ontology Structure\n"      (* Print if the XML file is a valid ontology *)
+else
+  print "Invalid Ontology Structure\n";;  (* Print if the XML file is not a valid ontology *)
