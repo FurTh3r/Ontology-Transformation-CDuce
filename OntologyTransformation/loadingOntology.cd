@@ -1,0 +1,46 @@
+(* 
+   This code defines an ontology structure using CDuce, which is an XML-based 
+   language for expressing ontologies. The ontology is described using RDF, OWL, 
+   SKOS, and custom namespaces, and includes classes with properties such as 
+   sub-classes, equivalent classes, labels, and notes.
+
+   The code also includes functionality for loading and validating an XML file
+   containing ontology data against the defined ontology structure.
+*)
+
+(* Defining namespaces for different ontology vocabularies *)
+namespace skos = "http://www.w3.org/2004/02/skos/core#";;       (* Namespace for SKOS (Simple Knowledge Organization System) *)
+namespace owl = "http://www.w3.org/2002/07/owl#";;              (* Namespace for OWL (Web Ontology Language) *)
+namespace rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";; (* Namespace for RDF (Resource Description Framework) *)
+namespace www = "http://www.persone#";;                         (* Custom namespace for the ontology data *)
+namespace xml = "http://www.w3.org/XML/1998/namespace";;        (* Namespace for XML *)
+namespace xsd = "http://www.w3.org/2001/XMLSchema#";;           (* Namespace for XML Schema data types *)
+namespace rdfs = "http://www.w3.org/2000/01/rdf-schema#";;      (* Namespace for RDF Schema *)
+
+(* Defining the ontology structure using types for classes and properties *)
+type Ontology = <rdf:RDF xml:base=String> [ Class* ]            (* An ontology consists of RDF elements, and each element can have multiple classes *)
+
+type Class = <owl:Class rdf:about=String> [ ClassAtt* ]         (* A class in the ontology, described by an RDF resource *)
+type ClassAtt = SubClass | EqClass | Label | Note               (* Properties of a class can be subclasses, equivalent classes, labels, or notes *)
+
+(* SubClass defines the subclass relationship between two classes *)
+type SubClass = <rdfs:subClassOf rdf:resource=String> []        (* A class is a subclass of another class, specified by the RDF resource *)
+
+(* EqClass defines equivalent classes, which can either be specified by attributes or by an RDF resource *)
+type EqClass  = <owl:equivalentClass> [ EqAttr ]                (* An equivalent class defined by restrictions *)
+              | <owl:equivalentClass rdf:resource=String> []    (* An equivalent class specified by an RDF resource *)
+
+(* EqAttr defines the restrictions or conditions on equivalent classes *)
+type EqAttr   = <owl:Restriction> [ AnyXml* ]                   (* Restrictions are expressed as XML elements *)
+
+(* Label provides a human-readable label for a class, with an optional language specification *)
+type Label    = <rdfs:label xml:lang=String> String             (* A label for the class, with an optional language attribute *)
+
+(* Note provides a scope note for a class, usually used for additional explanations *)
+type Note     = <skos:scopeNote xml:lang=String> String         (* A scope note for the class, with an optional language attribute *)
+
+
+(* Loading and validating the XML file against the Ontology type *)
+let ontology :? Ontology = 
+    load_xml "PATH_TO_FILE";;  
+    (* Load the XML file and validate it against the Ontology type *)
