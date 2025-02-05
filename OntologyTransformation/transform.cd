@@ -63,24 +63,29 @@ let fun select_compatible_attributes (att : ClassAtt) : ClassAtt =
 let fun transform_compatible_elements (ontology : AnyXml) : AnyXml =
   match ontology with
     | <rdf:RDF xml:base=uri> classes -> 
-        let transformed_classes = map classes with
+        let transformed_classes = map classes with (*TODO IMPLEMENT THIS AS FILTER*)
           | <owl:Class rdf:about=cls> att -> 
-              let compatible_attrs = map att with
+              let compatible_attrs = map att with (*TODO IMPLEMENT THIS AS FILTER*)
                 | att & ClassAtt -> select_compatible_attributes att
-                | _ -> [] (* Ignore incompatible elements instead of raising an error *)
+                | _ -> raise "Non-compatible element"
               in
               <owl:Class rdf:about=cls> compatible_attrs
-          | _ -> [] (* Ignore non-class elements instead of raising an error *)
+          | _ -> raise "Non-compatible class"
         in
         <rdf:RDF xml:base=uri> transformed_classes
-    | _ -> raise "Non-compatible RDF structure";;
+    | _ -> raise "Non-compatible RDF structure";; (*TODO IMPLEMENT THIS AS FILTER*)
+
+(* Function to count the number of elements in a list *)
+let fun listLength ( [ Any* ] -> Int )
+  | ([ _ ] @ y) -> 1 + listLength y
+  | [] -> 0;;
 
 (* Function to check if all elements in a list are true *)
 let fun andList ( [ Bool* ] -> Bool )
-    | ([ x ] @ y) -> (x && (andList y))
-    | [] -> `true;;
+  | ([ x ] @ y) -> (x && (andList y))
+  | [] -> `true;;
 
-(* Function to validate if an XML structure conforms to the ontology definition *)
+(* Function to validate if an XML structure conforms to the ontology definition (Dynamic check)*)
 let fun validate_elements (input : AnyXml) : Bool =
   match input with
     | <rdf:RDF> classes -> 
@@ -102,17 +107,17 @@ let fun validate_elements (input : AnyXml) : Bool =
 (* Function to validate and transform the ontology if needed *)
 let fun verify_and_transform_ontology (input : AnyXml) : Bool =
   let valid = validate_elements input in
-  if valid then
-    (print "Valid Ontology\n"; `true)  (* Ontology is valid, return true *)
-  else
-    (print "Invalid Ontology, transforming...\n"; 
-     let transformed = transform_compatible_elements input in
-     let transformed_valid = validate_elements transformed in
-     if transformed_valid then 
-       (print "Ontology valid after transforming: True\n"; `true)
-     else 
-       (print "Ontology valid after transforming: False\n"; `false)
-    );;
+    if valid then
+      (print "Valid Ontology\n"; `true)  (* Ontology is valid, return true *)
+    else
+      (print "Invalid Ontology, transforming...\n"; 
+      let transformed = transform_compatible_elements input in
+        let transformed_valid = validate_elements transformed in
+          if transformed_valid then 
+            (print "Ontology valid after transforming: True\n"; `true)
+          else 
+            (print "Ontology valid after transforming: False\n"; `false)
+          );;
 
 
 (* Main entry point to load and validate the XML file. *)
