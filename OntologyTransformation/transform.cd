@@ -57,15 +57,66 @@ let fun select_compatible_attributes (att : ClassAtt) : ClassAtt =
     | _ & EqClass -> att   (* Valid attribute *)
     | _ & Label -> att     (* Valid attribute *)
     | _ & Note -> att      (* Valid attribute *)
-    | _ -> raise "Non-compatible attribute" ;;  (* Raise an error for invalid attributes TODO Remove this(?) *)
+    | _ -> raise "Non-compatible attribute" ;;  (* Raise an error for invalid attributes....... Remove this(?) *)
 
-(* Function to transform the ontology, keeping only valid elements *)
+
+
+
+
+(*
+: Internal error:
+  Internal error: Failure("Todo: 35")
+Backtrace:
+*)
+
+(* Funzione per filtrare gli attributi validi di una classe *)
+let fun filter_valid_attributes (atts : [ AnyXml* ]) : [ AnyXml* ] =
+  match atts with
+    | [] -> []  (* Lista vuota restituita se non ci sono attributi *)
+    | ((s & SubClass) @ rest) -> [s] @ filter_valid_attributes(rest)  (* Aggiunge SubClass alla lista filtrata *)
+    | ((s & EqClass) @ rest) -> [s] @ filter_valid_attributes(rest)   (* Aggiunge EqClass alla lista filtrata *)
+    | ((s & Label) @ rest) -> [s] @ filter_valid_attributes(rest)     (* Aggiunge Label alla lista filtrata *)
+    | ((s & Note) @ rest) -> [s] @ filter_valid_attributes(rest)      (* Aggiunge Note alla lista filtrata *)
+    | (_ @ rest) -> filter_valid_attributes(rest);;  (* Scarta gli altri attributi non validi *)
+
+(* Funzione per filtrare solo le classi valide con almeno un attributo valido *)
+let fun filter_valid_classes (classes : [ AnyXml* ]) : [ AnyXml* ] =
+  match classes with
+    | [] -> []
+    | (<owl:Class rdf:about=cls> att @ rest) ->
+        let valid_attributes = filter_valid_attributes(att) in
+        if valid_attributes != [] then
+          [ <owl:Class rdf:about=cls> valid_attributes ] @ filter_valid_classes(rest)
+        else
+          filter_valid_classes(rest)  (* Rimuove la classe se non ha attributi validi *)
+    | (_ @ rest) -> filter_valid_classes(rest);;  (* Rimuove elementi non `owl:Class` *)
+
+(* Funzione per trasformare l'ontologia mantenendo solo elementi validi *)
 let fun transform_compatible_elements (ontology : AnyXml) : AnyXml =
   match ontology with
     | <rdf:RDF xml:base=uri> classes -> 
-        let transformed_classes = map classes with (*TODO IMPLEMENT THIS AS FILTER*)
+        print "Processing RDF structure...\n";  (* Debugging output *)
+        let transformed_classes = filter_valid_classes(classes) in
+        <rdf:RDF xml:base=uri> transformed_classes
+    | _ -> 
+        print "Non-compatible RDF structure\n";  (* Debugging output *)
+        <rdf:RDF>[];;  (* Se l'input non è un RDF valido, restituisce un RDF vuoto *)
+
+
+
+
+
+
+
+
+
+
+(*let fun transform_compatible_elements (ontology : AnyXml) : AnyXml =
+  match ontology with
+    | <rdf:RDF xml:base=uri> classes -> 
+        let transformed_classes = map classes with
           | <owl:Class rdf:about=cls> att -> 
-              let compatible_attrs = map att with (*TODO IMPLEMENT THIS AS FILTER*)
+              let compatible_attrs = map att with
                 | att & ClassAtt -> select_compatible_attributes att
                 | _ -> raise "Non-compatible element"
               in
@@ -73,7 +124,7 @@ let fun transform_compatible_elements (ontology : AnyXml) : AnyXml =
           | _ -> raise "Non-compatible class"
         in
         <rdf:RDF xml:base=uri> transformed_classes
-    | _ -> raise "Non-compatible RDF structure";; (*TODO IMPLEMENT THIS AS FILTER*)
+    | _ -> raise "Non-compatible RDF structure";;*)
 
 (* Function to count the number of elements in a list *)
 let fun listLength ( [ Any* ] -> Int )
