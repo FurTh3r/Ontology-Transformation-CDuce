@@ -1,0 +1,175 @@
+(* ==========================
+   Namespace Declarations
+   ========================== *)
+namespace skos = "http://www.w3.org/2004/02/skos/core#";;
+namespace owl = "http://www.w3.org/2002/07/owl#";;
+namespace rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";;
+namespace www = "http://www.persone#";;
+namespace xml = "http://www.w3.org/XML/1998/namespace";;
+namespace xsd = "http://www.w3.org/2001/XMLSchema#";;
+namespace rdfs = "http://www.w3.org/2000/01/rdf-schema#";;
+
+(* ==========================
+   Ontology Type Definitions
+   ========================== *)
+
+(* Define the ontology structure type with required namespaces and class definitions *)
+type Ontology = <rdf:RDF xml:base=String 
+                        xmlns:rdf=String 
+                        xmlns:owl=String 
+                        xmlns:rdfs=String 
+                        xmlns:skos=String 
+                        xmlns:xsd=String 
+                        xmlns:www=String> 
+                        [ Class * ]
+
+(* Define an OWL class with multiple attributes *)
+type Class = <owl:Class rdf:about=String> [ ClassAtt * ]
+
+(* Define the possible attributes of a class *)
+type ClassAtt = SubClass | EqClass | Label | Note 
+
+(* Define subclass relationship *)
+type SubClass = <rdfs:subClassOf rdf:resource=String> []
+
+(* Define equivalent class relationships, which can be a resource or a restriction *)
+type EqClass  = <owl:equivalentClass> [ EqAttr ] 
+              | <owl:equivalentClass rdf:resource=String> []
+
+(* Define restrictions within an equivalent class *)
+type EqAttr   = <owl:Restriction> [ AnyXml* ]
+
+(* Define class labels with language attributes *)
+type Label    = <rdfs:label xml:lang=String> String
+
+(* Define scope notes for documentation purposes *)
+type Note     = <skos:scopeNote xml:lang=String> String;;
+
+(* ==========================
+   Utility Functions
+   ========================== *)
+
+(* Function to safely load an XML file with error handling *)
+let fun safe_load_xml (path : Latin1) : AnyXml =
+  try 
+    let ret_val = load_xml path in  (* Attempt to load the XML file *)
+    print "Loaded successfully\n";  (* Print success message *)
+    ret_val                         (* Return the loaded XML *)
+  with 
+    _ -> 
+      print "Error loading XML, syntax error\n";  (* Print error message *)
+      <rdf:RDF>[];;  (* Return an empty RDF structure in case of an error *)
+
+(* Function to filter and select only valid attributes *)
+let fun select_compatible_attributes (att : ClassAtt) : ClassAtt =
+  match att with
+    | _ & SubClass -> att  (* Valid attribute *)
+    | _ & EqClass -> att   (* Valid attribute *)
+    | _ & Label -> att     (* Valid attribute *)
+    | _ & Note -> att      (* Valid attribute *)
+    | _ -> raise "Non-compatible attribute" ;;  (* Raise an error for invalid attributes....... Remove this(?) *)
+
+(*
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+: Internal error:
+  Internal error: Failure("Todo: 35")
+Backtrace:
+
+One of the functions below
+*)
+
+(* Funzione per filtrare gli attributi validi di una classe *)
+let fun filter_valid_attributes (atts : [ AnyXml* ]) : [ AnyXml* ] =
+  match atts with
+    | [] -> []  (* Return empty list if there are no attributes *)
+    | ((s & SubClass) @ rest) -> [s] @ filter_valid_attributes(rest)  (* Include SubClass if valid *)
+    | ((s & EqClass) @ rest) -> [s] @ filter_valid_attributes(rest)   (* Include EqClass if valid *)
+    | ((s & Label) @ rest) -> [s] @ filter_valid_attributes(rest)     (* Include Label if valid *)
+    | ((s & Note) @ rest) -> [s] @ filter_valid_attributes(rest)      (* Include Note if valid *)
+    | (_ @ rest) -> filter_valid_attributes(rest);;  (* Discard invalid attributes *)
+
+(* Function to filter only valid classes with at least one valid attribute *)
+let fun filter_valid_classes (classes : [ AnyXml* ]) : [ AnyXml* ] =
+  match classes with
+    | [] -> []
+    | (<owl:Class rdf:about=cls> att @ rest) ->
+        let valid_attributes = filter_valid_attributes(att) in
+        if valid_attributes != [] then
+          [ <owl:Class rdf:about=cls> valid_attributes ] @ filter_valid_classes(rest)
+        else
+          filter_valid_classes(rest)  (* Remove class if it has no valid attributes *)
+    | (_ @ rest) -> filter_valid_classes(rest);;  (* Remove non `owl:Class` elements *)
+
+(* Function to transform the ontology, keeping only valid elements *)
+let fun transform_compatible_elements (ontology : AnyXml) : AnyXml =
+  match ontology with
+    | <rdf:RDF xml:base=uri> classes -> 
+        print "Processing RDF structure...\n";  (* Debugging output *)
+        let transformed_classes = filter_valid_classes(classes) in
+        <rdf:RDF xml:base=uri> transformed_classes
+    | _ -> 
+        print "Non-compatible RDF structure\n";  (* Debugging output *)
+        <rdf:RDF>[];;  (* Return empty RDF if input is invalid *)
+
+(*
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*)
+
+(* Function to count the number of elements in a list *)
+let fun listLength ( [ Any* ] -> Int )
+  | ([ _ ] @ y) -> 1 + listLength y
+  | [] -> 0;;
+
+(* Function to check if all elements in a list are true *)
+let fun andList ( [ Bool* ] -> Bool )
+  | ([ x ] @ y) -> (x && (andList y))
+  | [] -> `true;;
+
+(* Function to validate if an XML structure conforms to the ontology definition (Dynamic check)*)
+let fun validate_elements (input : AnyXml) : Bool =
+  match input with
+    | <rdf:RDF> classes -> 
+        let valid_classes = map classes with
+          | <owl:Class rdf:about=_> att -> 
+              let valid_att = map att with
+                | _ & SubClass -> `true
+                | _ & EqClass -> `true
+                | _ & Label -> `true
+                | _ & Note -> `true
+                | _ -> `false
+              in
+              andList valid_att
+          | _ -> `false
+        in
+        andList valid_classes
+    | _ -> `false;;
+
+(* Function to validate and transform the ontology if needed *)
+let fun verify_and_transform_ontology (input : AnyXml) : Bool =
+  let valid = validate_elements input in
+    if valid then
+      (print "Valid Ontology\n"; `true)  (* Ontology is valid, return true *)
+    else
+      (print "Invalid Ontology, transforming...\n"; 
+      let transformed = transform_compatible_elements input in
+        let transformed_valid = validate_elements transformed in
+          if transformed_valid then 
+            (print "Ontology valid after transforming: True\n"; `true)
+          else 
+            (print "Ontology valid after transforming: False\n"; `false)
+          );;
+
+
+(* Main entry point to load and validate the XML file. *)
+(* Load the XML ontology file safely *)
+let xml_file = safe_load_xml "IO/ontology.xml";;
+
+(* Verify ontology validity and transform if necessary *)
+let valid = verify_and_transform_ontology xml_file;;
+
+(* Save the transformed ontology if valid *)
+if valid then
+  dump_to_file_utf8 "IO/output.xml" (print_xml_utf8 xml_file)
+else
+  print "Failed to validate or transform ontology\n";;
