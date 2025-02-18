@@ -27,42 +27,8 @@ let fun safe_load_xml (path : Latin1) : AnyXml =
     ret_val                         (* Return the loaded XML *)
   with 
     _ -> 
-      print "Error loading XML, syntax error\n";  (* Print error message *)
-      <rdf:RDF>[];;  (* Return an empty RDF structure in case of an error *)
-
-(* Function to filter valid attributes of a class *)
-let fun filter_valid_attributes (atts : [ AnyXml* ]) : [ AnyXml* ] =
-  match atts with
-    | [] -> []  (* Return empty list if there are no attributes *)
-    | ([ s & SubClass ] @ rest) -> [s] @ filter_valid_attributes rest  (* Add SubClass to the filtered list *)
-    | ([ s & EqClass ] @ rest) -> [s] @ filter_valid_attributes rest   (* Add EqClass to the filtered list *)
-    | ([ s & Label ] @ rest) -> [s] @ filter_valid_attributes rest     (* Add Label to the filtered list *)
-    | ([ s & Note ] @ rest) -> [s] @ filter_valid_attributes rest      (* Add Note to the filtered list *)
-    | ([ _ ] @ rest ) -> filter_valid_attributes rest;;                (* Discard invalid attributes *)
-
-(* Funzione per filtrare solo le classi valide con almeno un attributo valido *)
-let fun filter_valid_classes (classes : [ AnyXml* ]) : [ AnyXml* ] =
-  match classes with
-    | [] -> []
-    | ([ <owl:Class rdf:about=cls> (att & [ AnyXml* ])] @ rest) -> 
-        let valid_attributes = filter_valid_attributes att in
-        if not (valid_attributes = []) then
-          (* Ensure the returned type is compatible with [ AnyXml* ] *)
-          [ <owl:Class rdf:about=cls> valid_attributes ] @ filter_valid_classes rest
-        else
-          filter_valid_classes rest  (* Remove class if no valid attributes are found *)
-    | ([ _ ] @ rest) -> filter_valid_classes rest;;  (* Remove non-owl:Class elements *)
-
-(* Function to transform the ontology, keeping only compatible and valid elements *)
-let fun transform_compatible_elements (ontology : AnyXml) : AnyXml =
-  match ontology with
-    | <rdf:RDF xml:base=uri> (classes & [ AnyXml* ]) -> 
-        print "Processing RDF structure...\n";  (* Debugging output *)
-        let transformed_classes = filter_valid_classes classes in
-          <rdf:RDF xml:base=uri> transformed_classes
-    | _ -> 
-        print "Non-compatible RDF structure\n";  (* Debugging output for non-compatible input *)
-        <rdf:RDF>[];;  (* Return an empty RDF structure if input is invalid *)
+      print "Error loading XML: Syntax Error\n";  (* Print error message *)
+      <rdf:RDF> [];;  (* Return an empty RDF structure in case of an error *)
 
 (* Function to validate if an XML structure conforms to the ontology definition (Dynamic check) *)
 let fun validate_elements (input : AnyXml) : Bool = 
@@ -70,34 +36,89 @@ let fun validate_elements (input : AnyXml) : Bool =
     | _ & Ontology -> `true  (* If input matches the Ontology type, return true *)
     | _ -> `false;;          (* Otherwise, return false *)
 
-(* Function to validate and transform the ontology if needed *)
+(* Function to filter valid attributes of a class *)
+let fun filter_valid_attributes (atts : [ AnyXml* ]) : [ AnyXml* ] =
+  match atts with
+    | []                        -> []                                  (* Return empty list if there are no attributes *)
+    | ([ s & SubClass ] @ rest) -> [s] @ filter_valid_attributes rest  (* Add SubClass to the filtered list *)
+    | ([ s & EqClass ] @ rest)  -> [s] @ filter_valid_attributes rest  (* Add EqClass to the filtered list *)
+    | ([ s & Label ] @ rest)    -> [s] @ filter_valid_attributes rest  (* Add Label to the filtered list *)
+    | ([ s & Note ] @ rest)     -> [s] @ filter_valid_attributes rest  (* Add Note to the filtered list *)
+    | ([ s ] @ rest )           -> (
+                                      print_utf8 ("Removing non-valid element: " @ (string_of s) @ "\n");
+                                      filter_valid_attributes rest     (* Discard invalid attributes *)
+                                   );;              
+
+(* Funzione per filtrare solo le classi valide con almeno un attributo valido *)
+let fun filter_valid_classes (classes : [ AnyXml* ]) : [ AnyXml* ] =
+  match classes with
+    | [] -> [] (* Check for empty structures *)
+    | ([ <owl:Class rdf:about=cls> (att & [ AnyXml* ])] @ rest) -> (* Ensure the returned type is compatible with [ AnyXml* ] *)
+        let valid_attributes = filter_valid_attributes att in
+        if not (valid_attributes = []) then (* If there are no attributes, the structure is empty *)
+          [ <owl:Class rdf:about=cls> valid_attributes ] @ filter_valid_classes rest
+        else
+          (
+            print_utf8 ("Removing class (no attributes): " @ (string_of cls) @ "\n");
+            filter_valid_classes rest  (* Remove class if no valid attributes are found *)
+          )
+    | ([ _ ] @ rest) -> 
+          (
+            print "Removing non-owl:Class element\n";
+            filter_valid_classes rest  (* Remove non-owl:Class elements *)
+          );;
+
+(* Function to transform the ontology, keeping only compatible and valid elements *)
+let fun transform_compatible_elements (ontology : AnyXml) : AnyXml =
+  match ontology with
+    | <rdf:RDF xml:base=uri> (classes & [ AnyXml* ]) -> 
+        print "Processing RDF structure...\n";  (* Debugging output for compatible input *)
+        let transformed_classes = filter_valid_classes classes in (* Transfroming the Ontology *)
+          <rdf:RDF xml:base=uri> transformed_classes (* Return the transformed RDF structure *)
+    | _ -> 
+        print "Non-compatible RDF structure\n";  (* Debugging output for non-compatible input *)
+        <rdf:RDF> [];;  (* Return an empty RDF structure if input is invalid *)
+
+(* Function to validate and transform the ontology if needed. Note: If transforming fails it returns the input Xml *)
 let fun verify_and_transform_ontology (input : AnyXml) : AnyXml =
     if (validate_elements input) then
-      (print "Valid Ontology\n"; input)  (* If ontology is valid, return it *)
+      (
+        print "Valid Ontology\n"; 
+        input (* If ontology is valid, return it *)
+      )  
     else
-      (print "Invalid Ontology, transforming...\n"; 
-      let transformed = transform_compatible_elements input in
-        let transformed_valid = validate_elements transformed in
-          if transformed_valid then 
-            (print "Ontology valid after transforming: True\n"; transformed)  (* If valid after transforming, return *)
+      (
+        print "Invalid Ontology, transforming...\n"; 
+        let transformed = transform_compatible_elements input in
+          if (validate_elements transformed) then 
+            (
+              print "Ontology valid after transforming: True\n"; 
+              transformed (* If valid after transforming, return *)
+            )
           else 
-            (print "Ontology valid after transforming: False\n"; input)  (* If still invalid, return the original input *)
-          );;
+            (
+              print "Ontology valid after transforming: False\n"; 
+              input (* If still invalid, return the original input *)
+            )  
+      );;
 
 (* Main entry point to load and validate the XML file. *)
 (* Load the XML ontology file safely *)
-let xml_file = safe_load_xml "IO/ontology.rdf";; (*TODO: remove the ?: check*)
+let xml_file = safe_load_xml "IO/ontology.rdf";;
 
 if (validate_elements xml_file) then
-  print "Outer check valid ontology\n"
+  print "First check: Valid Ontology\n"
 else
-  print "Outer check non valid ontology\n";;
+  print "First check: Not Valid Ontology\n";;
 
 (* Verify ontology validity and transform if necessary *)
 let valid_ontology = verify_and_transform_ontology xml_file;;
 
 (* Save the transformed ontology if valid *)
 if (validate_elements valid_ontology) then
-  dump_to_file_utf8 "IO/output.xml" (print_xml_utf8 valid_ontology)
+  (
+    print "Transformed Ontology saved to file\n";
+    dump_to_file_utf8 "IO/output.rdf" (print_xml_utf8 valid_ontology)
+  )
 else
   print "Failed to validate or transform ontology\n";;
