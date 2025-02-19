@@ -49,7 +49,7 @@ let fun filter_valid_attributes (atts : [ AnyXml* ]) : [ AnyXml* ] =
                                       filter_valid_attributes rest     (* Discard invalid attributes *)
                                    );;              
 
-(* Funzione per filtrare solo le classi valide con almeno un attributo valido *)
+(* Function to filter only valid classes with at least one valid attribute *)
 let fun filter_valid_classes (classes : [ AnyXml* ]) : [ AnyXml* ] =
   match classes with
     | [] -> [] (* Check for empty structures *)
