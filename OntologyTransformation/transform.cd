@@ -28,7 +28,7 @@ let fun safe_load_xml (path : Latin1) : AnyXml =
   with 
     _ -> 
       print "Error loading XML: Syntax Error\n";  (* Print error message *)
-      <rdf:RDF> [];;  (* Return an empty RDF structure in case of an error *)
+      <rdf:RDF xml:base="Default"> [];;  (* Return an empty RDF structure in case of an error *)
 
 (* Function to validate if an XML structure conforms to the ontology definition (Dynamic check) *)
 let fun validate_elements (input : AnyXml) : Bool = 
@@ -77,7 +77,7 @@ let fun transform_compatible_elements (ontology : AnyXml) : AnyXml =
           <rdf:RDF xml:base=uri> transformed_classes (* Return the transformed RDF structure *)
     | _ -> 
         print "Non-compatible RDF structure\n";  (* Debugging output for non-compatible input *)
-        <rdf:RDF> [];;  (* Return an empty RDF structure if input is invalid *)
+        <rdf:RDF xml:base="Default"> [];;  (* Return an empty RDF structure if input is invalid *)
 
 (* Function to validate and transform the ontology if needed. Note: If transforming fails it returns the input Xml *)
 let fun verify_and_transform_ontology (input : AnyXml) : AnyXml =
@@ -104,7 +104,7 @@ let fun verify_and_transform_ontology (input : AnyXml) : AnyXml =
 
 (* Main entry point to load and validate the XML file. *)
 (* Load the XML ontology file safely *)
-let xml_file = safe_load_xml "IO/ontology.rdf";;
+let xml_file = safe_load_xml "IO/ontology2.rdf";;
 
 if (validate_elements xml_file) then
   print "First check: Valid Ontology\n"
