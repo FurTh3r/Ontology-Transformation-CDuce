@@ -87,19 +87,4 @@ let fun verify_and_transform_ontology (input : AnyXml) : AnyXml =
 (* Load the XML ontology file safely *)
 let xml_file = safe_load_xml "{INPUT_FILE_PLACEHOLDER}";;
 
-if (validate_elements xml_file) then
-  print "First check: Valid Ontology\n"
-else
-  print "First check: Not Valid Ontology\n";;
-
-(* Verify ontology validity and transform if necessary *)
-let valid_ontology = verify_and_transform_ontology xml_file;;
-
-(* Save the transformed ontology if valid *)
-if (validate_elements valid_ontology) then
-  (
-    print "Transformed Ontology saved to file\n";
-    dump_to_file_utf8 "{OUTPUT_FILE_PLACEHOLDER}" (print_xml_utf8 valid_ontology)
-  )
-else
-  print "Failed to validate or transform ontology\n";;
+{ENTRYPOINT_PLACEHOLDER}
