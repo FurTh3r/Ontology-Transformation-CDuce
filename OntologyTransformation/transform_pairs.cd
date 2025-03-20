@@ -104,7 +104,7 @@ let fun verify_and_transform_ontology (input : AnyXml) : AnyXml =
 
 (* Main entry point to load and validate the XML file. *)
 (* Load the XML ontology file safely *)
-let xml_file = safe_load_xml "IO/ontology2.rdf";;
+let xml_file = safe_load_xml "INPUT_PATH";;
 
 if (validate_elements xml_file) then
   print "First check: Valid Ontology\n"
@@ -118,7 +118,7 @@ let valid_ontology = verify_and_transform_ontology xml_file;;
 if (validate_elements valid_ontology) then
   (
     print "Transformed Ontology saved to file\n";
-    dump_to_file_utf8 "IO/output.rdf" (print_xml_utf8 valid_ontology)
+    dump_to_file_utf8 "OUTPUT_PATH" (print_xml_utf8 valid_ontology)
   )
 else
   print "Failed to validate or transform ontology\n";;
