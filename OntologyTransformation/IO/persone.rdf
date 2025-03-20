@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<rdf:RDF xmlns="http://www.persone/"
+         xml:base="http://www.persone/"
+         xmlns:owl="http://www.w3.org/2002/07/owl#"
+         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:www="http://www.persone#"
+         xmlns:xml="http://www.w3.org/XML/1998/namespace"
+         xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+
+  <owl:Ontology rdf:about="http://www.persone"/>
+
+  <!-- http://www.persone#genitoreDi -->
+  <owl:ObjectProperty rdf:about="http://www.persone#genitoreDi"/>
+
+  <!-- http://www.persone#Genitori -->
+  <owl:Class rdf:about="http://www.persone#Genitori">
+    <owl:equivalentClass>
+      <owl:Restriction>
+        <owl:onProperty rdf:resource="http://www.persone#genitoreDi"/>
+        <owl:someValuesFrom rdf:resource="http://www.persone#Persone"/>
+      </owl:Restriction>
+    </owl:equivalentClass>
+    <rdfs:subClassOf rdf:resource="http://www.persone#Persone"/>
+  </owl:Class>
+
+  <!-- http://www.persone#Persone -->
+  <owl:Class rdf:about="http://www.persone#Persone"/>
+
+  <!-- http://www.persone#Bruto -->
+  <owl:NamedIndividual rdf:about="http://www.persone#Bruto">
+    <rdf:type rdf:resource="http://www.persone#Persone"/>
+    <rdfs:comment>Bruto</rdfs:comment>
+  </owl:NamedIndividual>
+
+  <!-- http://www.persone#Cesare -->
+  <owl:NamedIndividual rdf:about="http://www.persone#Cesare">
+    <rdf:type rdf:resource="http://www.persone#Genitori"/>
+    <www:genitoreDi rdf:resource="http://www.persone#Bruto"/>
+    <rdfs:comment>Caio</rdfs:comment>
+    <rdfs:comment>Augusto</rdfs:comment>
+    <rdfs:comment>Giulio</rdfs:comment>
+    <rdfs:comment>Cesare</rdfs:comment>
+  </owl:NamedIndividual>
+
+</rdf:RDF>
