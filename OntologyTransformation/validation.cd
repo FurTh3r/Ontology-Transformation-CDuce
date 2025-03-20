@@ -38,7 +38,7 @@ let fun safe_load_xml (path : Latin1) : AnyXml =
   with (* Handle the exception in case of an error, printing an error message and returning an empty RDF element. *)
     _ -> 
       print "Error loading XML, Syntax Error\n";  (* Print error message *)
-      <rdf:RDF>[];;                               (* Return an empty RDF element as a fallback *)
+      <rdf:RDF xml:base="Default"> [];;           (* Return an empty RDF element as a fallback *)
 
 (* Verification function to check if the input XML matches the Ontology type. *)
 let fun verify (input : AnyXml) : Bool = 
