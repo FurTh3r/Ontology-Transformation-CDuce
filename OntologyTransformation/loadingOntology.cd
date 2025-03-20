@@ -42,5 +42,4 @@ type Note     = <skos:scopeNote xml:lang=String> String         (* A scope note 
 
 (* Loading and validating the XML file against the Ontology type *)
 let ontology :? Ontology = 
-    load_xml "PATH_TO_FILE";;  
-    (* Load the XML file and validate it against the Ontology type *)
+    load_xml "PATH_TO_FILE";;  (* Load the XML file and validate it against the Ontology type *)
