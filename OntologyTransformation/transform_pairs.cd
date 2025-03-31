@@ -73,7 +73,7 @@ let fun transform_compatible_elements (ontology : AnyXml) : AnyXml =
   match ontology with
     | <rdf:RDF xml:base=uri> (classes & [ AnyXml* ]) -> 
         print "Processing RDF structure...\n";  (* Debugging output for compatible input *)
-        let transformed_classes = filter_valid_classes classes in (* Transfroming the Ontology *)
+        let transformed_classes = filter_valid_classes classes in (* Transforming the Ontology *)
           <rdf:RDF xml:base=uri> transformed_classes (* Return the transformed RDF structure *)
     | _ -> 
         print "Non-compatible RDF structure\n";  (* Debugging output for non-compatible input *)

@@ -15,11 +15,11 @@ namespace rdfs = "http://www.w3.org/2000/01/rdf-schema#";;
 let fun safe_load_xml (path : Latin1) : AnyXml =
   try 
     let ret_val = load_xml path in  (* Attempt to load the XML file *)
-    print "Loaded successfully\n";  (* Print success message *)
+    print "LOADED SUCCESSFULLY\n";  (* Print success message *)
     ret_val                         (* Return the loaded XML *)
   with 
     _ -> 
-      print "Error loading XML: Syntax Error\n";  (* Print error message *)
+      print "SYNTAX ERROR\n";  (* Print error message *)
       <rdf:RDF xml:base="Default"> [];;  (* Return an empty RDF structure in case of an error *)
 
 (* Function to validate if an XML structure conforms to the ontology definition (Dynamic check) *)
@@ -34,7 +34,6 @@ let fun filter_valid_attributes (atts : [ AnyXml* ]) : [ AnyXml* ] =
     | [] -> []                                  (* Return empty list if there are no attributes *)
     {FILTER_ATTRIBUTES_PLACEHOLDER}
     | (_ , rest)           -> (
-        print_utf8 ("Removing non-valid element\n");
         filter_valid_attributes rest     (* Discard invalid attributes *)
       );;           
 
@@ -45,7 +44,6 @@ let fun filter_valid_classes (classes : [ AnyXml* ]) : [ AnyXml* ] =
     {FILTER_CLASSES_PLACEHOLDER}
     | (_, rest) -> 
           (
-            print "Removing non-owl:Class element\n";
             filter_valid_classes rest  (* Remove non-owl:Class elements *)
           );;
 
@@ -53,32 +51,31 @@ let fun filter_valid_classes (classes : [ AnyXml* ]) : [ AnyXml* ] =
 let fun transform_compatible_elements (ontology : AnyXml) : AnyXml =
   match ontology with
     | <rdf:RDF xml:base=uri> (classes & [ AnyXml* ]) -> 
-        print "Processing RDF structure...\n";  (* Debugging output for compatible input *)
         let transformed_classes = filter_valid_classes classes in (* Transfroming the Ontology *)
           <rdf:RDF xml:base=uri> transformed_classes (* Return the transformed RDF structure *)
     | _ -> 
-        print "Non-compatible RDF structure\n";  (* Debugging output for non-compatible input *)
+        print "RDF ERROR\n";  (* Debugging output for non-compatible input *)
         <rdf:RDF xml:base="Default"> [];;  (* Return an empty RDF structure if input is invalid *)
 
 (* Function to validate and transform the ontology if needed. Note: If transforming fails it returns the input Xml *)
 let fun verify_and_transform_ontology (input : AnyXml) : AnyXml =
     if (validate_elements input) then
       (
-        print "Valid Ontology\n"; 
+        print "VALID ONTOLOGY\n"; 
         input (* If ontology is valid, return it *)
       )  
     else
       (
-        print "Invalid Ontology, transforming...\n"; 
+        print "INVALID ONTOLOGY\n"; 
         let transformed = transform_compatible_elements input in
           if (validate_elements transformed) then 
             (
-              print "Ontology valid after transforming: True\n"; 
+              print "VALID ONTOLOGY AFTER TRANSFORMING\n"; 
               transformed (* If valid after transforming, return *)
             )
           else 
             (
-              print "Ontology valid after transforming: False\n"; 
+              print "INVALID ONTOLOGY AFTER TRANSFORMING\n"; 
               input (* If still invalid, return the original input *)
             )  
       );;
@@ -88,3 +85,5 @@ let fun verify_and_transform_ontology (input : AnyXml) : AnyXml =
 let xml_file = safe_load_xml "{INPUT_FILE_PLACEHOLDER}";;
 
 {ENTRYPOINT_PLACEHOLDER}
+
+print "EXIT\n";;
